@@ -23,9 +23,10 @@ dia.
   Configurações é possível exportar/importar um backup em JSON e resetar
   os dados.
 
-> A lista de disciplinas/tópicos pré-carregada é um ponto de partida
-> genérico para concursos de Polícia Civil — ajuste-a conforme o edital
-> oficial da PC-AL 2026 assim que ele for publicado.
+> A lista de disciplinas/tópicos pré-carregada reproduz o conteúdo
+> programático (Anexo II) do Edital nº 1 – PC/AL, de 2 de julho de 2026
+> (Cebraspe), para o cargo de Escrivão de Polícia Civil. Em caso de
+> retificação do edital, ajuste os tópicos diretamente na tela Edital.
 
 ## Rodando localmente
 

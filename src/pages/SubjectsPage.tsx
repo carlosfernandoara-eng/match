@@ -256,9 +256,10 @@ export default function SubjectsPage() {
       <div>
         <h1 className="text-2xl font-bold text-slate-900">Edital</h1>
         <p className="text-sm text-slate-500 mt-1">
-          Marque o status de cada tópico conforme for estudando. A lista
-          abaixo é um ponto de partida — ajuste as disciplinas e tópicos
-          conforme o edital oficial da PC-AL 2026.
+          Marque o status de cada tópico conforme for estudando. Conteúdo
+          programático do Edital nº 1 – PC/AL (Cebraspe), cargo de Escrivão
+          de Polícia Civil, verticalizado por disciplina. Em caso de
+          retificação do edital, ajuste os tópicos por aqui.
         </p>
       </div>
 
