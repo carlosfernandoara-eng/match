@@ -38,6 +38,16 @@ export interface QuestionLog {
   note?: string;
 }
 
+export interface FlashcardLog {
+  id: string;
+  date: string; // YYYY-MM-DD
+  subjectId?: string;
+  topicId?: string;
+  created: number;
+  reviewed: number;
+  note?: string;
+}
+
 export interface PomodoroSettings {
   focusMinutes: number;
   shortBreakMinutes: number;

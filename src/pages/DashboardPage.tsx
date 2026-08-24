@@ -7,12 +7,13 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { Clock, Flame, ListChecks, Target } from "lucide-react";
+import { Clock, Flame, Layers, ListChecks, Target } from "lucide-react";
 import { useAppStore } from "../store";
 import { Card, ProgressBar, StatCard } from "../components/ui";
 import { formatDuration } from "../lib/date";
 import {
   editalProgress,
+  flashcardTotals,
   last14DaysSeries,
   questionTotals,
   secondsSince,
@@ -26,13 +27,15 @@ export default function DashboardPage() {
   const subjects = useAppStore((s) => s.subjects);
   const sessions = useAppStore((s) => s.sessions);
   const questionLogs = useAppStore((s) => s.questionLogs);
+  const flashcardLogs = useAppStore((s) => s.flashcardLogs);
 
   const total = totalSeconds(sessions);
   const weekTotal = secondsSince(sessions, weekAgoISO());
   const series = last14DaysSeries(sessions);
-  const streak = studyStreak(sessions, questionLogs);
+  const streak = studyStreak(sessions, questionLogs, flashcardLogs);
   const edital = editalProgress(subjects);
   const questions = questionTotals(questionLogs);
+  const flashcards = flashcardTotals(flashcardLogs);
   const bySubject = subjectTimeBreakdown(sessions, subjects);
 
   return (
@@ -46,7 +49,7 @@ export default function DashboardPage() {
         </p>
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
         <StatCard
           label="Horas totais estudadas"
           value={formatDuration(total)}
@@ -74,6 +77,12 @@ export default function DashboardPage() {
               : "nenhum registro ainda"
           }
           icon={<Target size={28} />}
+        />
+        <StatCard
+          label="Flashcards revisados"
+          value={`${flashcards.reviewed}`}
+          sub={`${flashcards.created} criados no total`}
+          icon={<Layers size={28} />}
         />
       </div>
 

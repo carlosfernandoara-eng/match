@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type {
+  FlashcardLog,
   PomodoroSettings,
   QuestionLog,
   Subject,
@@ -14,7 +15,11 @@ interface AppState {
   subjects: Subject[];
   sessions: StudySession[];
   questionLogs: QuestionLog[];
+  flashcardLogs: FlashcardLog[];
   pomodoroSettings: PomodoroSettings;
+  installedAt: string;
+  lastBackupAt: string | null;
+  snoozeBackupUntil: string | null;
 
   addSubject: (name: string, color: string) => void;
   renameSubject: (subjectId: string, name: string) => void;
@@ -36,12 +41,20 @@ interface AppState {
   updateQuestionLog: (id: string, patch: Partial<QuestionLog>) => void;
   removeQuestionLog: (id: string) => void;
 
+  addFlashcardLog: (log: Omit<FlashcardLog, "id">) => void;
+  updateFlashcardLog: (id: string, patch: Partial<FlashcardLog>) => void;
+  removeFlashcardLog: (id: string) => void;
+
   updatePomodoroSettings: (patch: Partial<PomodoroSettings>) => void;
+
+  markBackupDone: () => void;
+  snoozeBackupReminder: (days: number) => void;
 
   importData: (data: {
     subjects: Subject[];
     sessions: StudySession[];
     questionLogs: QuestionLog[];
+    flashcardLogs?: FlashcardLog[];
     pomodoroSettings?: PomodoroSettings;
   }) => void;
   resetAll: () => void;
@@ -60,7 +73,11 @@ export const useAppStore = create<AppState>()(
       subjects: buildSeedSubjects(),
       sessions: [],
       questionLogs: [],
+      flashcardLogs: [],
       pomodoroSettings: defaultPomodoro,
+      installedAt: new Date().toISOString(),
+      lastBackupAt: null,
+      snoozeBackupUntil: null,
 
       addSubject: (name, color) =>
         set((s) => ({
@@ -165,9 +182,39 @@ export const useAppStore = create<AppState>()(
           questionLogs: s.questionLogs.filter((l) => l.id !== id),
         })),
 
+      addFlashcardLog: (log) =>
+        set((s) => ({
+          flashcardLogs: [...s.flashcardLogs, { ...log, id: uid() }],
+        })),
+
+      updateFlashcardLog: (id, patch) =>
+        set((s) => ({
+          flashcardLogs: s.flashcardLogs.map((l) =>
+            l.id === id ? { ...l, ...patch } : l,
+          ),
+        })),
+
+      removeFlashcardLog: (id) =>
+        set((s) => ({
+          flashcardLogs: s.flashcardLogs.filter((l) => l.id !== id),
+        })),
+
       updatePomodoroSettings: (patch) =>
         set((s) => ({
           pomodoroSettings: { ...s.pomodoroSettings, ...patch },
+        })),
+
+      markBackupDone: () =>
+        set(() => ({
+          lastBackupAt: new Date().toISOString(),
+          snoozeBackupUntil: null,
+        })),
+
+      snoozeBackupReminder: (days) =>
+        set(() => ({
+          snoozeBackupUntil: new Date(
+            Date.now() + days * 24 * 60 * 60 * 1000,
+          ).toISOString(),
         })),
 
       importData: (data) =>
@@ -175,6 +222,7 @@ export const useAppStore = create<AppState>()(
           subjects: data.subjects,
           sessions: data.sessions,
           questionLogs: data.questionLogs,
+          flashcardLogs: data.flashcardLogs ?? [],
           pomodoroSettings: data.pomodoroSettings ?? defaultPomodoro,
         })),
 
@@ -183,7 +231,10 @@ export const useAppStore = create<AppState>()(
           subjects: buildSeedSubjects(),
           sessions: [],
           questionLogs: [],
+          flashcardLogs: [],
           pomodoroSettings: defaultPomodoro,
+          lastBackupAt: null,
+          snoozeBackupUntil: null,
         })),
     }),
     { name: "pcal-2026-estudos" },

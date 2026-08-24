@@ -4,21 +4,31 @@ import {
   ListChecks,
   Timer as TimerIcon,
   ClipboardList,
+  Layers,
   Settings as SettingsIcon,
 } from "lucide-react";
 import DashboardPage from "./pages/DashboardPage";
 import SubjectsPage from "./pages/SubjectsPage";
 import TimerPage from "./pages/TimerPage";
 import QuestionsPage from "./pages/QuestionsPage";
+import FlashcardsPage from "./pages/FlashcardsPage";
 import SettingsPage from "./pages/SettingsPage";
+import { BackupReminder } from "./components/BackupReminder";
 
-type Tab = "dashboard" | "edital" | "timer" | "questoes" | "config";
+type Tab =
+  | "dashboard"
+  | "edital"
+  | "timer"
+  | "questoes"
+  | "flashcards"
+  | "config";
 
 const TABS: { id: Tab; label: string; icon: typeof LayoutDashboard }[] = [
   { id: "dashboard", label: "Painel", icon: LayoutDashboard },
   { id: "edital", label: "Edital", icon: ListChecks },
   { id: "timer", label: "Cronômetro", icon: TimerIcon },
   { id: "questoes", label: "Questões", icon: ClipboardList },
+  { id: "flashcards", label: "Flashcards", icon: Layers },
   { id: "config", label: "Config", icon: SettingsIcon },
 ];
 
@@ -52,11 +62,13 @@ export default function App() {
         </div>
       </nav>
 
-      <main className="flex-1 min-w-0 p-4 md:p-8">
+      <main className="flex-1 min-w-0 p-4 md:p-8 space-y-4">
+        <BackupReminder />
         {tab === "dashboard" && <DashboardPage />}
         {tab === "edital" && <SubjectsPage />}
         {tab === "timer" && <TimerPage />}
         {tab === "questoes" && <QuestionsPage />}
+        {tab === "flashcards" && <FlashcardsPage />}
         {tab === "config" && <SettingsPage />}
       </main>
     </div>

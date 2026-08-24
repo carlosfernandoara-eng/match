@@ -1,5 +1,5 @@
 import { format, parseISO, subDays } from "date-fns";
-import type { QuestionLog, StudySession, Subject } from "../types";
+import type { FlashcardLog, QuestionLog, StudySession, Subject } from "../types";
 
 export function totalSeconds(sessions: StudySession[]): number {
   return sessions.reduce((n, s) => n + s.durationSeconds, 0);
@@ -24,10 +24,15 @@ export function last14DaysSeries(sessions: StudySession[]) {
   return days;
 }
 
-export function studyStreak(sessions: StudySession[], questionLogs: QuestionLog[]): number {
+export function studyStreak(
+  sessions: StudySession[],
+  questionLogs: QuestionLog[],
+  flashcardLogs: FlashcardLog[] = [],
+): number {
   const activeDates = new Set<string>([
     ...sessions.map((s) => s.date),
     ...questionLogs.map((q) => q.date),
+    ...flashcardLogs.map((f) => f.date),
   ]);
   let streak = 0;
   let cursor = new Date();
@@ -51,6 +56,16 @@ export function questionTotals(questionLogs: QuestionLog[]) {
   return questionLogs.reduce(
     (acc, l) => ({ total: acc.total + l.total, correct: acc.correct + l.correct }),
     { total: 0, correct: 0 },
+  );
+}
+
+export function flashcardTotals(flashcardLogs: FlashcardLog[]) {
+  return flashcardLogs.reduce(
+    (acc, l) => ({
+      created: acc.created + l.created,
+      reviewed: acc.reviewed + l.reviewed,
+    }),
+    { created: 0, reviewed: 0 },
   );
 }
 

@@ -2,28 +2,30 @@ import { useRef, useState } from "react";
 import { Download, Upload, TriangleAlert } from "lucide-react";
 import { useAppStore } from "../store";
 import { Card } from "../components/ui";
+import { downloadBackupJson } from "../lib/backup";
 
 export default function SettingsPage() {
   const subjects = useAppStore((s) => s.subjects);
   const sessions = useAppStore((s) => s.sessions);
   const questionLogs = useAppStore((s) => s.questionLogs);
+  const flashcardLogs = useAppStore((s) => s.flashcardLogs);
   const pomodoroSettings = useAppStore((s) => s.pomodoroSettings);
+  const lastBackupAt = useAppStore((s) => s.lastBackupAt);
+  const markBackupDone = useAppStore((s) => s.markBackupDone);
   const importData = useAppStore((s) => s.importData);
   const resetAll = useAppStore((s) => s.resetAll);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [importError, setImportError] = useState("");
 
   function handleExport() {
-    const payload = { subjects, sessions, questionLogs, pomodoroSettings };
-    const blob = new Blob([JSON.stringify(payload, null, 2)], {
-      type: "application/json",
+    downloadBackupJson({
+      subjects,
+      sessions,
+      questionLogs,
+      flashcardLogs,
+      pomodoroSettings,
     });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `pcal-2026-estudos-${new Date().toISOString().slice(0, 10)}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
+    markBackupDone();
   }
 
   function handleImportFile(file: File) {
@@ -46,7 +48,7 @@ export default function SettingsPage() {
   function handleReset() {
     if (
       confirm(
-        "Isso vai apagar todo o seu progresso (tópicos, sessões e questões) e restaurar o edital padrão. Deseja continuar?",
+        "Isso vai apagar todo o seu progresso (tópicos, sessões, questões e flashcards) e restaurar o edital padrão. Deseja continuar?",
       )
     ) {
       resetAll();
@@ -95,6 +97,11 @@ export default function SettingsPage() {
         {importError && (
           <p className="text-xs text-red-600">{importError}</p>
         )}
+        <p className="text-xs text-slate-400">
+          {lastBackupAt
+            ? `Último backup: ${new Date(lastBackupAt).toLocaleString("pt-BR")}`
+            : "Você ainda não exportou nenhum backup."}
+        </p>
       </Card>
 
       <Card className="p-4 space-y-3 border-red-100">
@@ -103,7 +110,7 @@ export default function SettingsPage() {
         </p>
         <p className="text-xs text-slate-500">
           Restaura a lista padrão de disciplinas/tópicos e apaga todas as
-          sessões de estudo e registros de questões.
+          sessões de estudo, registros de questões e de flashcards.
         </p>
         <button
           onClick={handleReset}
