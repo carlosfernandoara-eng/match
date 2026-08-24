@@ -59,6 +59,20 @@ export function questionTotals(questionLogs: QuestionLog[]) {
   );
 }
 
+export function topicQuestionTotals(
+  questionLogs: QuestionLog[],
+): Map<string, { total: number; correct: number }> {
+  const map = new Map<string, { total: number; correct: number }>();
+  for (const log of questionLogs) {
+    if (!log.topicId) continue;
+    const cur = map.get(log.topicId) ?? { total: 0, correct: 0 };
+    cur.total += log.total;
+    cur.correct += log.correct;
+    map.set(log.topicId, cur);
+  }
+  return map;
+}
+
 export function flashcardTotals(flashcardLogs: FlashcardLog[]) {
   return flashcardLogs.reduce(
     (acc, l) => ({

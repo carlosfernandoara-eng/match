@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { ChevronDown, ChevronRight, Plus, Trash2, X } from "lucide-react";
 import { useAppStore } from "../store";
 import { Card, ProgressBar } from "../components/ui";
+import { topicQuestionTotals } from "../lib/stats";
 import type { Topic, TopicStatus } from "../types";
 
 const STATUS_LABEL: Record<TopicStatus, string> = {
@@ -39,29 +40,46 @@ function subjectProgress(topics: Topic[]) {
 function TopicRow({
   subjectId,
   topic,
+  questionStats,
 }: {
   subjectId: string;
   topic: Topic;
+  questionStats?: { total: number; correct: number };
 }) {
   const setTopicStatus = useAppStore((s) => s.setTopicStatus);
+  const setTopicReviewed = useAppStore((s) => s.setTopicReviewed);
   const removeTopic = useAppStore((s) => s.removeTopic);
 
   return (
-    <div className="flex items-center gap-3 py-2 px-1 group">
-      <input
-        type="checkbox"
-        checked={topic.status === "concluido"}
-        onChange={(e) =>
-          setTopicStatus(
-            subjectId,
-            topic.id,
-            e.target.checked ? "concluido" : "pendente",
-          )
-        }
-        className="w-4 h-4 rounded accent-blue-600 shrink-0"
-      />
+    <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 py-2 px-1 group">
+      <label className="flex items-center gap-1.5 text-xs text-slate-500 shrink-0 cursor-pointer">
+        <input
+          type="checkbox"
+          checked={topic.status === "concluido"}
+          onChange={(e) =>
+            setTopicStatus(
+              subjectId,
+              topic.id,
+              e.target.checked ? "concluido" : "pendente",
+            )
+          }
+          className="w-3.5 h-3.5 rounded accent-blue-600 shrink-0"
+        />
+        Estudei
+      </label>
+      <label className="flex items-center gap-1.5 text-xs text-slate-500 shrink-0 cursor-pointer">
+        <input
+          type="checkbox"
+          checked={topic.reviewed}
+          onChange={(e) =>
+            setTopicReviewed(subjectId, topic.id, e.target.checked)
+          }
+          className="w-3.5 h-3.5 rounded accent-purple-600 shrink-0"
+        />
+        Revisei
+      </label>
       <span
-        className={`flex-1 text-sm ${
+        className={`flex-1 min-w-[160px] text-sm ${
           topic.status === "concluido"
             ? "text-slate-400 line-through"
             : "text-slate-800"
@@ -69,6 +87,15 @@ function TopicRow({
       >
         {topic.name}
       </span>
+      {questionStats && questionStats.total > 0 && (
+        <span
+          className="text-xs text-slate-400 shrink-0"
+          title="Questões respondidas associadas a este tópico"
+        >
+          {questionStats.correct}/{questionStats.total} questões (
+          {Math.round((questionStats.correct / questionStats.total) * 100)}%)
+        </span>
+      )}
       <select
         value={topic.status}
         onChange={(e) =>
@@ -95,8 +122,10 @@ function TopicRow({
 
 function SubjectCard({
   subject,
+  questionStatsByTopic,
 }: {
   subject: ReturnType<typeof useAppStore.getState>["subjects"][number];
+  questionStatsByTopic: Map<string, { total: number; correct: number }>;
 }) {
   const [open, setOpen] = useState(true);
   const [newTopic, setNewTopic] = useState("");
@@ -158,7 +187,12 @@ function SubjectCard({
         <div className="border-t border-slate-100 px-4 pb-4">
           <div className="divide-y divide-slate-50">
             {subject.topics.map((t) => (
-              <TopicRow key={t.id} subjectId={subject.id} topic={t} />
+              <TopicRow
+                key={t.id}
+                subjectId={subject.id}
+                topic={t}
+                questionStats={questionStatsByTopic.get(t.id)}
+              />
             ))}
           </div>
           {subject.topics.length === 0 && (
@@ -242,7 +276,12 @@ function AddSubjectForm({ onClose }: { onClose: () => void }) {
 
 export default function SubjectsPage() {
   const subjects = useAppStore((s) => s.subjects);
+  const questionLogs = useAppStore((s) => s.questionLogs);
   const [showAdd, setShowAdd] = useState(false);
+  const questionStatsByTopic = useMemo(
+    () => topicQuestionTotals(questionLogs),
+    [questionLogs],
+  );
 
   const totalTopics = subjects.reduce((n, s) => n + s.topics.length, 0);
   const doneTopics = subjects.reduce(
@@ -256,10 +295,12 @@ export default function SubjectsPage() {
       <div>
         <h1 className="text-2xl font-bold text-slate-900">Edital</h1>
         <p className="text-sm text-slate-500 mt-1">
-          Marque o status de cada tópico conforme for estudando. Conteúdo
-          programático do Edital nº 1 – PC/AL (Cebraspe), cargo de Escrivão
-          de Polícia Civil, verticalizado por disciplina. Em caso de
-          retificação do edital, ajuste os tópicos por aqui.
+          Marque se já estudou e se já revisou cada tópico — o número de
+          questões feitas aparece automaticamente quando você registra
+          questões associadas a ele em Questões. Conteúdo programático do
+          Edital nº 1 – PC/AL (Cebraspe), cargo de Escrivão de Polícia Civil,
+          verticalizado por disciplina. Em caso de retificação do edital,
+          ajuste os tópicos por aqui.
         </p>
       </div>
 
@@ -277,7 +318,11 @@ export default function SubjectsPage() {
 
       <div className="space-y-4">
         {subjects.map((s) => (
-          <SubjectCard key={s.id} subject={s} />
+          <SubjectCard
+            key={s.id}
+            subject={s}
+            questionStatsByTopic={questionStatsByTopic}
+          />
         ))}
       </div>
 

@@ -32,6 +32,11 @@ interface AppState {
     topicId: string,
     status: TopicStatus,
   ) => void;
+  setTopicReviewed: (
+    subjectId: string,
+    topicId: string,
+    reviewed: boolean,
+  ) => void;
   removeTopic: (subjectId: string, topicId: string) => void;
 
   addSession: (session: Omit<StudySession, "id">) => void;
@@ -108,6 +113,7 @@ export const useAppStore = create<AppState>()(
                       id: uid(),
                       name,
                       status: "pendente",
+                      reviewed: false,
                       updatedAt: new Date().toISOString(),
                     },
                   ],
@@ -139,6 +145,22 @@ export const useAppStore = create<AppState>()(
                   topics: sub.topics.map((t) =>
                     t.id === topicId
                       ? { ...t, status, updatedAt: new Date().toISOString() }
+                      : t,
+                  ),
+                }
+              : sub,
+          ),
+        })),
+
+      setTopicReviewed: (subjectId, topicId, reviewed) =>
+        set((s) => ({
+          subjects: s.subjects.map((sub) =>
+            sub.id === subjectId
+              ? {
+                  ...sub,
+                  topics: sub.topics.map((t) =>
+                    t.id === topicId
+                      ? { ...t, reviewed, updatedAt: new Date().toISOString() }
                       : t,
                   ),
                 }

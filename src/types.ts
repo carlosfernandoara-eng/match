@@ -4,6 +4,7 @@ export interface Topic {
   id: string;
   name: string;
   status: TopicStatus;
+  reviewed: boolean;
   notes?: string;
   updatedAt: string;
 }

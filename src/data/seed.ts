@@ -18,6 +18,7 @@ function subject(name: string, color: string, topics: string[]): Subject {
       id: uid(),
       name: t,
       status: "pendente" as const,
+      reviewed: false,
       updatedAt: now,
     })),
   };
