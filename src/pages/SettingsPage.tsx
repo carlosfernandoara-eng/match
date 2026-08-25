@@ -9,6 +9,7 @@ export default function SettingsPage() {
   const sessions = useAppStore((s) => s.sessions);
   const questionLogs = useAppStore((s) => s.questionLogs);
   const flashcardLogs = useAppStore((s) => s.flashcardLogs);
+  const cronogramaCycles = useAppStore((s) => s.cronogramaCycles);
   const pomodoroSettings = useAppStore((s) => s.pomodoroSettings);
   const lastBackupAt = useAppStore((s) => s.lastBackupAt);
   const markBackupDone = useAppStore((s) => s.markBackupDone);
@@ -23,6 +24,7 @@ export default function SettingsPage() {
       sessions,
       questionLogs,
       flashcardLogs,
+      cronogramaCycles,
       pomodoroSettings,
     });
     markBackupDone();
@@ -48,7 +50,7 @@ export default function SettingsPage() {
   function handleReset() {
     if (
       confirm(
-        "Isso vai apagar todo o seu progresso (tópicos, sessões, questões e flashcards) e restaurar o edital padrão. Deseja continuar?",
+        "Isso vai apagar todo o seu progresso (tópicos, sessões, questões, flashcards e marcações do cronograma) e restaurar o edital e o cronograma padrão. Deseja continuar?",
       )
     ) {
       resetAll();
@@ -109,8 +111,9 @@ export default function SettingsPage() {
           <TriangleAlert size={16} /> Zona de risco
         </p>
         <p className="text-xs text-slate-500">
-          Restaura a lista padrão de disciplinas/tópicos e apaga todas as
-          sessões de estudo, registros de questões e de flashcards.
+          Restaura a lista padrão de disciplinas/tópicos e o cronograma
+          padrão, apagando todas as sessões de estudo, registros de
+          questões, de flashcards e marcações do cronograma.
         </p>
         <button
           onClick={handleReset}

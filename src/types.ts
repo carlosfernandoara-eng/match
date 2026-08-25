@@ -55,3 +55,25 @@ export interface PomodoroSettings {
   longBreakMinutes: number;
   cyclesBeforeLongBreak: number;
 }
+
+export interface CronogramaItem {
+  id: string;
+  subjectLabel: string;
+  description: string;
+  done: boolean;
+  linkedSubjectId?: string;
+}
+
+export interface CronogramaDay {
+  id: string;
+  label: string;
+  estimatedTime?: string;
+  items: CronogramaItem[];
+}
+
+export interface CronogramaCycle {
+  id: string;
+  name: string;
+  subtitle?: string;
+  days: CronogramaDay[];
+}

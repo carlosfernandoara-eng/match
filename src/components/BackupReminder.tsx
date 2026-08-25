@@ -8,6 +8,7 @@ export function BackupReminder() {
   const sessions = useAppStore((s) => s.sessions);
   const questionLogs = useAppStore((s) => s.questionLogs);
   const flashcardLogs = useAppStore((s) => s.flashcardLogs);
+  const cronogramaCycles = useAppStore((s) => s.cronogramaCycles);
   const pomodoroSettings = useAppStore((s) => s.pomodoroSettings);
   const installedAt = useAppStore((s) => s.installedAt);
   const lastBackupAt = useAppStore((s) => s.lastBackupAt);
@@ -19,7 +20,10 @@ export function BackupReminder() {
     sessions.length > 0 ||
     questionLogs.length > 0 ||
     flashcardLogs.length > 0 ||
-    subjects.some((s) => s.topics.some((t) => t.status !== "pendente"));
+    subjects.some((s) => s.topics.some((t) => t.status !== "pendente")) ||
+    cronogramaCycles.some((c) =>
+      c.days.some((d) => d.items.some((i) => i.done)),
+    );
 
   const daysSinceInstall = daysAgo(installedAt);
   const daysSinceBackup = lastBackupAt ? daysAgo(lastBackupAt) : daysSinceInstall;
@@ -36,6 +40,7 @@ export function BackupReminder() {
       sessions,
       questionLogs,
       flashcardLogs,
+      cronogramaCycles,
       pomodoroSettings,
     });
     markBackupDone();

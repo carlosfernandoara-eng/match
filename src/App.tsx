@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   LayoutDashboard,
   ListChecks,
+  CalendarDays,
   Timer as TimerIcon,
   ClipboardList,
   Layers,
@@ -9,15 +10,19 @@ import {
 } from "lucide-react";
 import DashboardPage from "./pages/DashboardPage";
 import SubjectsPage from "./pages/SubjectsPage";
+import CronogramaPage from "./pages/CronogramaPage";
 import TimerPage from "./pages/TimerPage";
 import QuestionsPage from "./pages/QuestionsPage";
 import FlashcardsPage from "./pages/FlashcardsPage";
 import SettingsPage from "./pages/SettingsPage";
 import { BackupReminder } from "./components/BackupReminder";
+import { CronogramaReminder } from "./components/CronogramaReminder";
+import { useAppStore } from "./store";
 
 type Tab =
   | "dashboard"
   | "edital"
+  | "cronograma"
   | "timer"
   | "questoes"
   | "flashcards"
@@ -26,6 +31,7 @@ type Tab =
 const TABS: { id: Tab; label: string; icon: typeof LayoutDashboard }[] = [
   { id: "dashboard", label: "Painel", icon: LayoutDashboard },
   { id: "edital", label: "Edital", icon: ListChecks },
+  { id: "cronograma", label: "Cronograma", icon: CalendarDays },
   { id: "timer", label: "Cronômetro", icon: TimerIcon },
   { id: "questoes", label: "Questões", icon: ClipboardList },
   { id: "flashcards", label: "Flashcards", icon: Layers },
@@ -34,6 +40,11 @@ const TABS: { id: Tab; label: string; icon: typeof LayoutDashboard }[] = [
 
 export default function App() {
   const [tab, setTab] = useState<Tab>("dashboard");
+  const syncCronogramaSeed = useAppStore((s) => s.syncCronogramaSeed);
+
+  useEffect(() => {
+    syncCronogramaSeed();
+  }, [syncCronogramaSeed]);
 
   return (
     <div className="min-h-screen flex flex-col md:flex-row">
@@ -64,8 +75,10 @@ export default function App() {
 
       <main className="flex-1 min-w-0 p-4 md:p-8 space-y-4">
         <BackupReminder />
+        <CronogramaReminder />
         {tab === "dashboard" && <DashboardPage />}
         {tab === "edital" && <SubjectsPage />}
+        {tab === "cronograma" && <CronogramaPage />}
         {tab === "timer" && <TimerPage />}
         {tab === "questoes" && <QuestionsPage />}
         {tab === "flashcards" && <FlashcardsPage />}

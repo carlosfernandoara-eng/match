@@ -1,5 +1,11 @@
 import { format, parseISO, subDays } from "date-fns";
-import type { FlashcardLog, QuestionLog, StudySession, Subject } from "../types";
+import type {
+  CronogramaCycle,
+  FlashcardLog,
+  QuestionLog,
+  StudySession,
+  Subject,
+} from "../types";
 
 export function totalSeconds(sessions: StudySession[]): number {
   return sessions.reduce((n, s) => n + s.durationSeconds, 0);
@@ -71,6 +77,65 @@ export function topicQuestionTotals(
     map.set(log.topicId, cur);
   }
   return map;
+}
+
+export function cronogramaProgress(cycles: CronogramaCycle[]) {
+  let total = 0;
+  let done = 0;
+  for (const c of cycles) {
+    for (const day of c.days) {
+      for (const item of day.items) {
+        total++;
+        if (item.done) done++;
+      }
+    }
+  }
+  return { total, done, percent: total ? Math.round((done / total) * 100) : 0 };
+}
+
+export function cronogramaCycleProgress(cycle: CronogramaCycle) {
+  let total = 0;
+  let done = 0;
+  for (const day of cycle.days) {
+    for (const item of day.items) {
+      total++;
+      if (item.done) done++;
+    }
+  }
+  return { total, done, percent: total ? Math.round((done / total) * 100) : 0 };
+}
+
+export function cronogramaEditalCoverage(
+  cycles: CronogramaCycle[],
+  subjects: Subject[],
+) {
+  const touched = new Map<string, { itemsCount: number; doneCount: number }>();
+  for (const c of cycles) {
+    for (const day of c.days) {
+      for (const item of day.items) {
+        if (!item.linkedSubjectId) continue;
+        const cur = touched.get(item.linkedSubjectId) ?? {
+          itemsCount: 0,
+          doneCount: 0,
+        };
+        cur.itemsCount++;
+        if (item.done) cur.doneCount++;
+        touched.set(item.linkedSubjectId, cur);
+      }
+    }
+  }
+  const rows = subjects.map((s) => ({
+    subjectId: s.id,
+    name: s.name,
+    color: s.color,
+    itemsCount: touched.get(s.id)?.itemsCount ?? 0,
+    doneCount: touched.get(s.id)?.doneCount ?? 0,
+  }));
+  return {
+    rows,
+    subjectsTouched: rows.filter((r) => r.itemsCount > 0).length,
+    subjectsTotal: subjects.length,
+  };
 }
 
 export function flashcardTotals(flashcardLogs: FlashcardLog[]) {

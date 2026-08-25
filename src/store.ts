@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type {
+  CronogramaCycle,
   FlashcardLog,
   PomodoroSettings,
   QuestionLog,
@@ -9,6 +10,7 @@ import type {
   TopicStatus,
 } from "./types";
 import { buildSeedSubjects } from "./data/seed";
+import { buildCronogramaSeed } from "./data/cronogramaSeed";
 import { uid } from "./lib/id";
 
 interface AppState {
@@ -17,9 +19,12 @@ interface AppState {
   questionLogs: QuestionLog[];
   flashcardLogs: FlashcardLog[];
   pomodoroSettings: PomodoroSettings;
+  cronogramaCycles: CronogramaCycle[];
   installedAt: string;
   lastBackupAt: string | null;
   snoozeBackupUntil: string | null;
+  lastCronogramaUpdateAt: string | null;
+  snoozeCronogramaUntil: string | null;
 
   addSubject: (name: string, color: string) => void;
   renameSubject: (subjectId: string, name: string) => void;
@@ -52,6 +57,19 @@ interface AppState {
 
   updatePomodoroSettings: (patch: Partial<PomodoroSettings>) => void;
 
+  toggleCronogramaItem: (
+    cycleId: string,
+    dayId: string,
+    itemId: string,
+  ) => void;
+  setCronogramaDayDone: (
+    cycleId: string,
+    dayId: string,
+    done: boolean,
+  ) => void;
+  syncCronogramaSeed: () => void;
+  snoozeCronogramaReminder: (days: number) => void;
+
   markBackupDone: () => void;
   snoozeBackupReminder: (days: number) => void;
 
@@ -60,6 +78,7 @@ interface AppState {
     sessions: StudySession[];
     questionLogs: QuestionLog[];
     flashcardLogs?: FlashcardLog[];
+    cronogramaCycles?: CronogramaCycle[];
     pomodoroSettings?: PomodoroSettings;
   }) => void;
   resetAll: () => void;
@@ -72,17 +91,22 @@ const defaultPomodoro: PomodoroSettings = {
   cyclesBeforeLongBreak: 4,
 };
 
+const initialSubjects = buildSeedSubjects();
+
 export const useAppStore = create<AppState>()(
   persist(
-    (set) => ({
-      subjects: buildSeedSubjects(),
+    (set, get) => ({
+      subjects: initialSubjects,
       sessions: [],
       questionLogs: [],
       flashcardLogs: [],
       pomodoroSettings: defaultPomodoro,
+      cronogramaCycles: buildCronogramaSeed(initialSubjects),
       installedAt: new Date().toISOString(),
       lastBackupAt: null,
       snoozeBackupUntil: null,
+      lastCronogramaUpdateAt: new Date().toISOString(),
+      snoozeCronogramaUntil: null,
 
       addSubject: (name, color) =>
         set((s) => ({
@@ -226,6 +250,70 @@ export const useAppStore = create<AppState>()(
           pomodoroSettings: { ...s.pomodoroSettings, ...patch },
         })),
 
+      toggleCronogramaItem: (cycleId, dayId, itemId) =>
+        set((s) => ({
+          cronogramaCycles: s.cronogramaCycles.map((c) =>
+            c.id !== cycleId
+              ? c
+              : {
+                  ...c,
+                  days: c.days.map((day) =>
+                    day.id !== dayId
+                      ? day
+                      : {
+                          ...day,
+                          items: day.items.map((item) =>
+                            item.id === itemId
+                              ? { ...item, done: !item.done }
+                              : item,
+                          ),
+                        },
+                  ),
+                },
+          ),
+        })),
+
+      setCronogramaDayDone: (cycleId, dayId, done) =>
+        set((s) => ({
+          cronogramaCycles: s.cronogramaCycles.map((c) =>
+            c.id !== cycleId
+              ? c
+              : {
+                  ...c,
+                  days: c.days.map((day) =>
+                    day.id !== dayId
+                      ? day
+                      : {
+                          ...day,
+                          items: day.items.map((item) => ({ ...item, done })),
+                        },
+                  ),
+                },
+          ),
+        })),
+
+      syncCronogramaSeed: () => {
+        const s = get();
+        const freshCycles = buildCronogramaSeed(s.subjects);
+        const existingNames = new Set(s.cronogramaCycles.map((c) => c.name));
+        const newCycles = freshCycles.filter(
+          (c) => !existingNames.has(c.name),
+        );
+        if (newCycles.length === 0) return;
+        set(() => ({
+          cronogramaCycles: [...s.cronogramaCycles, ...newCycles],
+          lastCronogramaUpdateAt: new Date().toISOString(),
+          snoozeCronogramaUntil: null,
+        }));
+      },
+
+      snoozeCronogramaReminder: (days) =>
+        set(() => ({
+          snoozeCronogramaUntil: new Date(
+            Date.now() + days * 24 * 60 * 60 * 1000,
+          ).toISOString(),
+        })),
+
       markBackupDone: () =>
         set(() => ({
           lastBackupAt: new Date().toISOString(),
@@ -245,19 +333,26 @@ export const useAppStore = create<AppState>()(
           sessions: data.sessions,
           questionLogs: data.questionLogs,
           flashcardLogs: data.flashcardLogs ?? [],
+          cronogramaCycles:
+            data.cronogramaCycles ?? buildCronogramaSeed(data.subjects),
           pomodoroSettings: data.pomodoroSettings ?? defaultPomodoro,
         })),
 
-      resetAll: () =>
+      resetAll: () => {
+        const freshSubjects = buildSeedSubjects();
         set(() => ({
-          subjects: buildSeedSubjects(),
+          subjects: freshSubjects,
           sessions: [],
           questionLogs: [],
           flashcardLogs: [],
+          cronogramaCycles: buildCronogramaSeed(freshSubjects),
           pomodoroSettings: defaultPomodoro,
           lastBackupAt: null,
           snoozeBackupUntil: null,
-        })),
+          lastCronogramaUpdateAt: new Date().toISOString(),
+          snoozeCronogramaUntil: null,
+        }));
+      },
     }),
     { name: "pcal-2026-estudos" },
   ),
