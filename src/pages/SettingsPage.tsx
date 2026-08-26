@@ -10,6 +10,8 @@ export default function SettingsPage() {
   const questionLogs = useAppStore((s) => s.questionLogs);
   const flashcardLogs = useAppStore((s) => s.flashcardLogs);
   const cronogramaCycles = useAppStore((s) => s.cronogramaCycles);
+  const flashcards = useAppStore((s) => s.flashcards);
+  const missedQuestions = useAppStore((s) => s.missedQuestions);
   const pomodoroSettings = useAppStore((s) => s.pomodoroSettings);
   const lastBackupAt = useAppStore((s) => s.lastBackupAt);
   const markBackupDone = useAppStore((s) => s.markBackupDone);
@@ -25,6 +27,8 @@ export default function SettingsPage() {
       questionLogs,
       flashcardLogs,
       cronogramaCycles,
+      flashcards,
+      missedQuestions,
       pomodoroSettings,
     });
     markBackupDone();

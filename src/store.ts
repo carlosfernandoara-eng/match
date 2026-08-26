@@ -2,16 +2,22 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type {
   CronogramaCycle,
+  Flashcard,
   FlashcardLog,
+  MissedQuestion,
   PomodoroSettings,
   QuestionLog,
   Subject,
   StudySession,
+  TimerState,
   TopicStatus,
 } from "./types";
 import { buildSeedSubjects } from "./data/seed";
 import { buildCronogramaSeed } from "./data/cronogramaSeed";
 import { uid } from "./lib/id";
+import { todayISO } from "./lib/date";
+import { timerElapsedSeconds, phaseTargetSeconds } from "./lib/timer";
+import { dueDateAfter, nextInterval } from "./lib/srs";
 
 interface AppState {
   subjects: Subject[];
@@ -20,6 +26,9 @@ interface AppState {
   flashcardLogs: FlashcardLog[];
   pomodoroSettings: PomodoroSettings;
   cronogramaCycles: CronogramaCycle[];
+  timer: TimerState;
+  flashcards: Flashcard[];
+  missedQuestions: MissedQuestion[];
   installedAt: string;
   lastBackupAt: string | null;
   snoozeBackupUntil: string | null;
@@ -57,6 +66,22 @@ interface AppState {
 
   updatePomodoroSettings: (patch: Partial<PomodoroSettings>) => void;
 
+  timerSetMode: (mode: TimerState["mode"]) => void;
+  timerSetSubjectTopic: (subjectId?: string, topicId?: string) => void;
+  timerStart: () => void;
+  timerPause: () => void;
+  timerResetPhase: () => void;
+  timerCompletePhase: () => void;
+  timerFinishFocusNow: () => void;
+  timerSaveStopwatch: () => void;
+
+  addMissedQuestion: (
+    q: Omit<MissedQuestion, "id" | "flashcardId">,
+  ) => void;
+  removeMissedQuestion: (id: string) => void;
+  reviewFlashcard: (id: string, correct: boolean) => void;
+  removeFlashcard: (id: string) => void;
+
   toggleCronogramaItem: (
     cycleId: string,
     dayId: string,
@@ -79,10 +104,21 @@ interface AppState {
     questionLogs: QuestionLog[];
     flashcardLogs?: FlashcardLog[];
     cronogramaCycles?: CronogramaCycle[];
+    flashcards?: Flashcard[];
+    missedQuestions?: MissedQuestion[];
     pomodoroSettings?: PomodoroSettings;
   }) => void;
   resetAll: () => void;
 }
+
+const initialTimer: TimerState = {
+  mode: "pomodoro",
+  phase: "focus",
+  cyclesDone: 0,
+  running: false,
+  startedAt: null,
+  accumulatedSeconds: 0,
+};
 
 const defaultPomodoro: PomodoroSettings = {
   focusMinutes: 25,
@@ -102,6 +138,9 @@ export const useAppStore = create<AppState>()(
       flashcardLogs: [],
       pomodoroSettings: defaultPomodoro,
       cronogramaCycles: buildCronogramaSeed(initialSubjects),
+      timer: initialTimer,
+      flashcards: [],
+      missedQuestions: [],
       installedAt: new Date().toISOString(),
       lastBackupAt: null,
       snoozeBackupUntil: null,
@@ -250,6 +289,205 @@ export const useAppStore = create<AppState>()(
           pomodoroSettings: { ...s.pomodoroSettings, ...patch },
         })),
 
+      timerSetMode: (mode) =>
+        set((s) => ({
+          timer: {
+            ...s.timer,
+            mode,
+            phase: "focus",
+            cyclesDone: 0,
+            running: false,
+            startedAt: null,
+            accumulatedSeconds: 0,
+          },
+        })),
+
+      timerSetSubjectTopic: (subjectId, topicId) =>
+        set((s) => ({ timer: { ...s.timer, subjectId, topicId } })),
+
+      timerStart: () =>
+        set((s) =>
+          s.timer.running
+            ? {}
+            : {
+                timer: {
+                  ...s.timer,
+                  running: true,
+                  startedAt: new Date().toISOString(),
+                },
+              },
+        ),
+
+      timerPause: () =>
+        set((s) => {
+          if (!s.timer.running) return {};
+          return {
+            timer: {
+              ...s.timer,
+              running: false,
+              accumulatedSeconds: timerElapsedSeconds(s.timer),
+              startedAt: null,
+            },
+          };
+        }),
+
+      timerResetPhase: () =>
+        set((s) => ({
+          timer: {
+            ...s.timer,
+            running: false,
+            startedAt: null,
+            accumulatedSeconds: 0,
+          },
+        })),
+
+      timerCompletePhase: () => {
+        const s = get();
+        const t = s.timer;
+        if (t.mode !== "pomodoro") return;
+        if (t.phase === "focus") {
+          const target = phaseTargetSeconds(t.phase, s.pomodoroSettings);
+          if (target >= 1) {
+            get().addSession({
+              date: todayISO(),
+              subjectId: t.subjectId,
+              topicId: t.topicId,
+              mode: "pomodoro",
+              durationSeconds: Math.round(target),
+              startedAt: new Date().toISOString(),
+            });
+          }
+          const nextCycles = t.cyclesDone + 1;
+          const goLong =
+            nextCycles % s.pomodoroSettings.cyclesBeforeLongBreak === 0;
+          set(() => ({
+            timer: {
+              ...t,
+              phase: goLong ? "long" : "short",
+              cyclesDone: nextCycles,
+              running: false,
+              startedAt: null,
+              accumulatedSeconds: 0,
+            },
+          }));
+        } else {
+          set(() => ({
+            timer: {
+              ...t,
+              phase: "focus",
+              running: false,
+              startedAt: null,
+              accumulatedSeconds: 0,
+            },
+          }));
+        }
+      },
+
+      timerFinishFocusNow: () => {
+        const s = get();
+        const t = s.timer;
+        const elapsed = timerElapsedSeconds(t);
+        if (t.mode === "pomodoro" && t.phase === "focus" && elapsed >= 1) {
+          get().addSession({
+            date: todayISO(),
+            subjectId: t.subjectId,
+            topicId: t.topicId,
+            mode: "pomodoro",
+            durationSeconds: Math.round(elapsed),
+            startedAt: new Date().toISOString(),
+          });
+        }
+        set(() => ({
+          timer: {
+            ...t,
+            phase: "focus",
+            cyclesDone: 0,
+            running: false,
+            startedAt: null,
+            accumulatedSeconds: 0,
+          },
+        }));
+      },
+
+      timerSaveStopwatch: () => {
+        const s = get();
+        const t = s.timer;
+        const elapsed = timerElapsedSeconds(t);
+        if (elapsed >= 1) {
+          get().addSession({
+            date: todayISO(),
+            subjectId: t.subjectId,
+            topicId: t.topicId,
+            mode: "cronometro",
+            durationSeconds: Math.round(elapsed),
+            startedAt: new Date().toISOString(),
+          });
+        }
+        set(() => ({
+          timer: { ...t, running: false, startedAt: null, accumulatedSeconds: 0 },
+        }));
+      },
+
+      addMissedQuestion: (q) => {
+        const flashcardId = uid();
+        const missedQuestionId = uid();
+        set((s) => ({
+          flashcards: [
+            ...s.flashcards,
+            {
+              id: flashcardId,
+              front: q.statement,
+              back: q.correctAnswer?.trim() || "Revisar tópico.",
+              subjectId: q.subjectId,
+              topicId: q.topicId,
+              createdAt: new Date().toISOString(),
+              sourceMissedQuestionId: missedQuestionId,
+              reviewCount: 0,
+              intervalDays: 0,
+              dueAt: todayISO(),
+            },
+          ],
+          missedQuestions: [
+            ...s.missedQuestions,
+            { ...q, id: missedQuestionId, flashcardId },
+          ],
+        }));
+      },
+
+      removeMissedQuestion: (id) =>
+        set((s) => {
+          const mq = s.missedQuestions.find((m) => m.id === id);
+          return {
+            missedQuestions: s.missedQuestions.filter((m) => m.id !== id),
+            flashcards: mq
+              ? s.flashcards.filter((f) => f.id !== mq.flashcardId)
+              : s.flashcards,
+          };
+        }),
+
+      reviewFlashcard: (id, correct) =>
+        set((s) => ({
+          flashcards: s.flashcards.map((f) => {
+            if (f.id !== id) return f;
+            const intervalDays = nextInterval(f.intervalDays, correct);
+            return {
+              ...f,
+              intervalDays,
+              dueAt: dueDateAfter(intervalDays),
+              reviewCount: f.reviewCount + 1,
+              lastReviewedAt: new Date().toISOString(),
+            };
+          }),
+        })),
+
+      removeFlashcard: (id) =>
+        set((s) => ({
+          flashcards: s.flashcards.filter((f) => f.id !== id),
+          missedQuestions: s.missedQuestions.filter(
+            (m) => m.flashcardId !== id,
+          ),
+        })),
+
       toggleCronogramaItem: (cycleId, dayId, itemId) =>
         set((s) => ({
           cronogramaCycles: s.cronogramaCycles.map((c) =>
@@ -335,6 +573,8 @@ export const useAppStore = create<AppState>()(
           flashcardLogs: data.flashcardLogs ?? [],
           cronogramaCycles:
             data.cronogramaCycles ?? buildCronogramaSeed(data.subjects),
+          flashcards: data.flashcards ?? [],
+          missedQuestions: data.missedQuestions ?? [],
           pomodoroSettings: data.pomodoroSettings ?? defaultPomodoro,
         })),
 
@@ -346,6 +586,9 @@ export const useAppStore = create<AppState>()(
           questionLogs: [],
           flashcardLogs: [],
           cronogramaCycles: buildCronogramaSeed(freshSubjects),
+          flashcards: [],
+          missedQuestions: [],
+          timer: initialTimer,
           pomodoroSettings: defaultPomodoro,
           lastBackupAt: null,
           snoozeBackupUntil: null,

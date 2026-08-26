@@ -28,6 +28,7 @@ export default function DashboardPage() {
   const sessions = useAppStore((s) => s.sessions);
   const questionLogs = useAppStore((s) => s.questionLogs);
   const flashcardLogs = useAppStore((s) => s.flashcardLogs);
+  const flashcardDeck = useAppStore((s) => s.flashcards);
 
   const total = totalSeconds(sessions);
   const weekTotal = secondsSince(sessions, weekAgoISO());
@@ -35,7 +36,13 @@ export default function DashboardPage() {
   const streak = studyStreak(sessions, questionLogs, flashcardLogs);
   const edital = editalProgress(subjects);
   const questions = questionTotals(questionLogs);
-  const flashcards = flashcardTotals(flashcardLogs);
+  const flashcardLogTotals = flashcardTotals(flashcardLogs);
+  const flashcards = {
+    created: flashcardLogTotals.created + flashcardDeck.length,
+    reviewed:
+      flashcardLogTotals.reviewed +
+      flashcardDeck.reduce((n, f) => n + f.reviewCount, 0),
+  };
   const bySubject = subjectTimeBreakdown(sessions, subjects);
 
   return (

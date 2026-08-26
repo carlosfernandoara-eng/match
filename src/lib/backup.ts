@@ -1,6 +1,8 @@
 import type {
   CronogramaCycle,
+  Flashcard,
   FlashcardLog,
+  MissedQuestion,
   PomodoroSettings,
   QuestionLog,
   StudySession,
@@ -13,6 +15,8 @@ export function downloadBackupJson(payload: {
   questionLogs: QuestionLog[];
   flashcardLogs: FlashcardLog[];
   cronogramaCycles: CronogramaCycle[];
+  flashcards: Flashcard[];
+  missedQuestions: MissedQuestion[];
   pomodoroSettings: PomodoroSettings;
 }) {
   const blob = new Blob([JSON.stringify(payload, null, 2)], {

@@ -16,7 +16,7 @@ export interface Subject {
   topics: Topic[];
 }
 
-export type SessionMode = "pomodoro" | "cronometro";
+export type SessionMode = "pomodoro" | "cronometro" | "manual";
 
 export interface StudySession {
   id: string;
@@ -76,4 +76,42 @@ export interface CronogramaCycle {
   name: string;
   subtitle?: string;
   days: CronogramaDay[];
+}
+
+export type TimerMode = "pomodoro" | "cronometro";
+export type PomodoroPhase = "focus" | "short" | "long";
+
+export interface TimerState {
+  mode: TimerMode;
+  phase: PomodoroPhase;
+  cyclesDone: number;
+  running: boolean;
+  startedAt: string | null; // ISO timestamp of the current running segment, null when paused
+  accumulatedSeconds: number; // seconds already counted in the current phase/session while paused
+  subjectId?: string;
+  topicId?: string;
+}
+
+export interface Flashcard {
+  id: string;
+  front: string;
+  back: string;
+  subjectId?: string;
+  topicId?: string;
+  createdAt: string;
+  sourceMissedQuestionId?: string;
+  lastReviewedAt?: string;
+  reviewCount: number;
+  intervalDays: number;
+  dueAt: string; // YYYY-MM-DD
+}
+
+export interface MissedQuestion {
+  id: string;
+  date: string; // YYYY-MM-DD
+  subjectId?: string;
+  topicId?: string;
+  statement: string;
+  correctAnswer?: string;
+  flashcardId: string;
 }
