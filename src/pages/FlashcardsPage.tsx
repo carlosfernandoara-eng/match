@@ -14,6 +14,7 @@ function MissedQuestionForm() {
   const [topicId, setTopicId] = useState("");
   const [statement, setStatement] = useState("");
   const [correctAnswer, setCorrectAnswer] = useState("");
+  const [comment, setComment] = useState("");
 
   function handleAdd() {
     if (!statement.trim()) return;
@@ -23,9 +24,11 @@ function MissedQuestionForm() {
       topicId: topicId || undefined,
       statement: statement.trim(),
       correctAnswer: correctAnswer.trim() || undefined,
+      comment: comment.trim() || undefined,
     });
     setStatement("");
     setCorrectAnswer("");
+    setComment("");
   }
 
   return (
@@ -64,6 +67,13 @@ function MissedQuestionForm() {
         onChange={(e) => setCorrectAnswer(e.target.value)}
         placeholder="Resposta correta / justificativa (vira o verso do flashcard)"
         rows={2}
+        className="w-full text-sm border border-slate-200 rounded-lg px-3 py-2 resize-y"
+      />
+      <textarea
+        value={comment}
+        onChange={(e) => setComment(e.target.value)}
+        placeholder="Comentário de alguém explicando a questão (opcional) — cole aqui a explicação de um professor, colega ou fórum"
+        rows={3}
         className="w-full text-sm border border-slate-200 rounded-lg px-3 py-2 resize-y"
       />
       <button
@@ -108,9 +118,19 @@ function FlashcardReviewRow({
       </div>
       <p className="text-sm text-slate-800">{card.front}</p>
       {showBack ? (
-        <p className="text-sm text-emerald-700 bg-emerald-50 rounded-lg px-3 py-2">
-          {card.back}
-        </p>
+        <div className="space-y-2">
+          <p className="text-sm text-emerald-700 bg-emerald-50 rounded-lg px-3 py-2">
+            {card.back}
+          </p>
+          {card.comment && card.comment !== card.back && (
+            <div className="text-sm text-slate-600 bg-slate-50 rounded-lg px-3 py-2">
+              <p className="text-xs font-medium text-slate-400 mb-1">
+                Comentário
+              </p>
+              {card.comment}
+            </div>
+          )}
+        </div>
       ) : (
         <button
           onClick={() => setShowBack(true)}

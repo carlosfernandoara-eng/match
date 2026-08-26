@@ -437,7 +437,9 @@ export const useAppStore = create<AppState>()(
             {
               id: flashcardId,
               front: q.statement,
-              back: q.correctAnswer?.trim() || "Revisar tópico.",
+              back:
+                q.correctAnswer?.trim() || q.comment?.trim() || "Revisar tópico.",
+              comment: q.comment?.trim() || undefined,
               subjectId: q.subjectId,
               topicId: q.topicId,
               createdAt: new Date().toISOString(),

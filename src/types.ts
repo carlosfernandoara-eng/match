@@ -96,6 +96,7 @@ export interface Flashcard {
   id: string;
   front: string;
   back: string;
+  comment?: string;
   subjectId?: string;
   topicId?: string;
   createdAt: string;
@@ -113,5 +114,6 @@ export interface MissedQuestion {
   topicId?: string;
   statement: string;
   correctAnswer?: string;
+  comment?: string;
   flashcardId: string;
 }
