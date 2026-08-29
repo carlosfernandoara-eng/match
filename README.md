@@ -1,32 +1,22 @@
-# Painel de Estudos — PC-AL 2026
+# Copa PMVR Intercolegial — Sorteio Oficial
 
-Aplicação web para acompanhar os estudos para o concurso da Polícia Civil
-de Alagoas (PC-AL) 2026: checklist de tópicos do edital, cronômetro
-pomodoro, registro de horas estudadas e registro de questões feitas por
-dia.
+Aplicação web para conduzir ao vivo, em telão, os dois sorteios da Copa PMVR
+Intercolegial 2026 (Maceió):
 
-## Funcionalidades
+- **Sorteio dos Grupos**: distribui os 12 times em 4 grupos de 3, um por vez,
+  com animação de suspense.
+- **Sorteio das Cores**: define a cor do uniforme de cada colégio, sorteada
+  na ordem dos grupos já definidos, a partir da paleta oficial das camisas.
+- **Quadro Final**: visão geral dos 4 grupos com o time e a cor sorteada de
+  cada um.
 
-- **Edital**: disciplinas e tópicos organizados em checklist, com status
-  (pendente / estudando / revisar / concluído) e barra de progresso por
-  disciplina. Totalmente editável — adicione, renomeie ou remova
-  disciplinas e tópicos.
-- **Cronômetro**: modo pomodoro configurável (foco / pausa curta / pausa
-  longa / ciclos) e cronômetro livre, ambos podendo ser associados a uma
-  disciplina/tópico. O tempo estudado é salvo automaticamente.
-- **Questões**: registro diário de questões feitas, com total de acertos
-  e percentual, por disciplina.
-- **Painel**: visão geral com horas totais, sequência de dias de estudo,
-  progresso do edital, gráfico de horas nos últimos 14 dias e distribuição
-  por disciplina.
-- **Dados locais**: tudo é salvo no `localStorage` do navegador. Em
-  Configurações é possível exportar/importar um backup em JSON e resetar
-  os dados.
+O progresso de cada sorteio é salvo automaticamente no `localStorage` do
+navegador, então um recarregamento de página não reinicia o sorteio. Cada
+tela de sorteio tem um botão "Reiniciar" (com confirmação) para começar do
+zero, caso necessário.
 
-> A lista de disciplinas/tópicos pré-carregada reproduz o conteúdo
-> programático (Anexo II) do Edital nº 1 – PC/AL, de 2 de julho de 2026
-> (Cebraspe), para o cargo de Escrivão de Polícia Civil. Em caso de
-> retificação do edital, ajuste os tópicos diretamente na tela Edital.
+Os times e a paleta de cores estão definidos em `src/data/teams.ts` e
+`src/data/colors.ts` — ajuste ali se a lista oficial mudar.
 
 ## Rodando localmente
 
@@ -44,11 +34,11 @@ npm run build
 npm run preview
 ```
 
-Como é uma aplicação 100% client-side (sem backend), o conteúdo de
-`dist/` pode ser hospedado em qualquer serviço de arquivos estáticos
-(Vercel, Netlify, GitHub Pages, etc.).
+Aplicação 100% client-side (sem backend): o conteúdo de `dist/` pode ser
+hospedado em qualquer serviço de arquivos estáticos (Vercel, Netlify, GitHub
+Pages, etc.) — ideal para abrir no telão no dia do evento.
 
 ## Stack
 
-React + TypeScript + Vite, Tailwind CSS, Zustand (estado + persistência),
-Recharts (gráficos).
+React + TypeScript + Vite, Tailwind CSS v4, Zustand (estado do sorteio +
+persistência local), lucide-react (ícones).
